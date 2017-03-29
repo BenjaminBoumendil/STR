@@ -43,7 +43,8 @@ public class HexGrid : NetworkBehaviour {
         cell.transform.SetParent(transform, false);
         cell.transform.localPosition = position;
         cell.Coordinates = HexCoordinates.FromOffsetCoordinates(x, z);
-        cell.Init(0, defaultColor);
+        cell.Owner = 0;
+        cell.Color = defaultColor;
 
         CreateCellLabel(cell);
 

@@ -4,9 +4,19 @@ using UnityEngine.EventSystems;
 
 public class PlayerController : AGameObject {
 
+    [SerializeField]
     [SyncVar]
     private string playerName;
-    public string PlayerName { get; set; }
+    public string PlayerName {
+        get
+        {
+            return playerName;
+        }
+        set
+        {
+            playerName = value;
+        }
+    }
 
     private GameObject selector;
     private GameObject hexGrid;
@@ -17,6 +27,16 @@ public class PlayerController : AGameObject {
     private void CmdSetAuthority(NetworkInstanceId objectId)
     {
         NetworkServer.FindLocalObject(objectId).GetComponent<AGameObject>().CmdSetOwner(netId);
+    }
+
+    [Client]
+    private void ClickEvent(Vector3 position)
+    {
+        HexCell cell = hexGrid.GetComponent<HexGrid>().GetCell(position);
+        if (!cell.hasAuthority)
+        {
+            CmdSetAuthority(cell.netId);
+        }
     }
 
     // Select a game object and render UI
@@ -34,7 +54,11 @@ public class PlayerController : AGameObject {
         
         if (selector != null)
         {
-            userOverlay.GetComponent<UserOverlay>().RenderSelection(selector);
+            userOverlay.GetComponent<UserOverlay>().RenderSelection(selector, delegate { ClickEvent(hit.point); });
+        }
+        else
+        {
+            userOverlay.GetComponent<UserOverlay>().ClearSelection();
         }
     }
 
@@ -47,11 +71,6 @@ public class PlayerController : AGameObject {
         if (Physics.Raycast(inputRay, out hit))
         {
             Select(hit);
-            HexCell cell = hexGrid.GetComponent<HexGrid>().GetCell(hit.point);
-            if (!cell.hasAuthority)
-            {
-                CmdSetAuthority(cell.netId);
-            }
         }
     }
 
@@ -62,11 +81,11 @@ public class PlayerController : AGameObject {
     }
 
     [Client]
-    void Update()
+    private void Update()
     {
         if (isLocalPlayer)
         {
-            if (Input.GetMouseButton(0) && !EventSystem.current.IsPointerOverGameObject())
+            if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
             {
                 HandleInput();
             }
